@@ -1,4 +1,8 @@
-const BASE = 'http://localhost:8080'
+/**
+ * BASE is empty in production (same-origin via nginx reverse-proxy).
+ * In dev, Vite proxies these paths to the backend (see vite.config.ts).
+ */
+const BASE = ''
 const post = (path: string) => fetch(`${BASE}${path}`, { method: 'POST' })
 
 export interface Timing {

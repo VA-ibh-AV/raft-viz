@@ -1,0 +1,10 @@
+ui/
+.git/
+.gitignore
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+nginx.conf
+**/.DS_Store
+**/node_modules

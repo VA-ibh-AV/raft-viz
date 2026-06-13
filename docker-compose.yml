@@ -1,0 +1,37 @@
+# raftviz — full stack
+#
+# Architecture
+#   browser ──► nginx (web) ──► backend (Go API + WS)
+#
+# Only `web` is published. Backend lives on the private docker network.
+# Cloudflare tunnel agent should be pointed at http://localhost:8090.
+
+services:
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: raftviz-backend
+    restart: unless-stopped
+    networks: [raftviz]
+    # No host port mapping — only nginx talks to it.
+    expose:
+      - "8080"
+
+  web:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: raftviz-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks: [raftviz]
+    ports:
+      # Host:Container — change left side to remap externally.
+      - "8090:80"
+
+networks:
+  raftviz:
+    driver: bridge

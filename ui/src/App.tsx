@@ -9,7 +9,8 @@ import { PhaseBanner }   from './components/PhaseBanner'
 import { LeftDocs }      from './components/docs/LeftDocs'
 
 export default function App() {
-  const { nodes, events, connected, animEvent } = useCluster('ws://localhost:8080/ws')
+  const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`
+  const { nodes, events, connected, animEvent } = useCluster(wsUrl)
   const { kill, revive, submit, addNode, removeNode, getTiming, setTiming } = useControls()
   const animations   = useAnimations(animEvent, nodes)
   const resetZoomRef = useRef<(() => void) | null>(null)
