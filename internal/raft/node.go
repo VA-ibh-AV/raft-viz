@@ -52,9 +52,18 @@ func NewNode(id int, peers []int, transport Transport, bus chan<- Event) *Node {
 		leaderID:  -1,
 		stopCh:    make(chan struct{}),
 	}
-	n.electionTimeout = time.Duration(150+rand.Intn(150)) * time.Millisecond
+	n.electionTimeout = randomElectionTimeout()
 	n.electionTimer = time.NewTimer(n.electionTimeout)
 	return n
+}
+
+func randomElectionTimeout() time.Duration {
+	t := GetTiming()
+	span := int64(t.ElectionTimeoutMax - t.ElectionTimeoutMin)
+	if span < 1 {
+		return t.ElectionTimeoutMin
+	}
+	return t.ElectionTimeoutMin + time.Duration(rand.Int63n(span))
 }
 
 func (n *Node) ID() int { return n.id }
@@ -85,8 +94,8 @@ func (n *Node) LogState() (entries []LogEntry, commitIndex int) {
 }
 
 func (n *Node) run() {
-	heartbeat := time.NewTicker(50 * time.Millisecond)
-	defer heartbeat.Stop()
+	heartbeatTimer := time.NewTimer(GetTiming().HeartbeatInterval)
+	defer heartbeatTimer.Stop()
 
 	for {
 		select {
@@ -102,13 +111,14 @@ func (n *Node) run() {
 				go n.startElection()
 			}
 
-		case <-heartbeat.C:
+		case <-heartbeatTimer.C:
 			n.mu.Lock()
 			isLeader := n.role == Leader
 			n.mu.Unlock()
 			if isLeader {
 				go n.sendHeartbeats()
 			}
+			heartbeatTimer.Reset(GetTiming().HeartbeatInterval)
 		}
 	}
 }
@@ -124,6 +134,7 @@ func (n *Node) resetElectionTimer() {
 		default:
 		}
 	}
+	n.electionTimeout = randomElectionTimeout()
 	n.electionTimer.Reset(n.electionTimeout)
 }
 

@@ -2,7 +2,7 @@ package api
 
 import "net/http"
 
-func NewServer(hub *Hub, chaos *ChaosHandler, submit *SubmitHandler, membership *MembershipHandler) *http.Server {
+func NewServer(hub *Hub, chaos *ChaosHandler, submit *SubmitHandler, membership *MembershipHandler, config *ConfigHandler) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/ws", hub.HandleWS)
@@ -17,6 +17,10 @@ func NewServer(hub *Hub, chaos *ChaosHandler, submit *SubmitHandler, membership 
 
 	// Log replication
 	mux.HandleFunc("POST /submit", submit.Handle)
+
+	// Timing config — heartbeat & election timeouts
+	mux.HandleFunc("GET /config/timing", config.Get)
+	mux.HandleFunc("POST /config/timing", config.Update)
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

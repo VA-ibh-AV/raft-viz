@@ -26,10 +26,11 @@ func main() {
 	chaos := api.NewChaosHandler(cl, bus)
 	submit := api.NewSubmitHandler(cl)
 	membership := api.NewMembershipHandler(cl, bus)
+	config := api.NewConfigHandler()
 
 	go hub.Run()
 
-	srv := api.NewServer(hub, chaos, submit, membership)
+	srv := api.NewServer(hub, chaos, submit, membership, config)
 	go func() {
 		fmt.Println("api :8080  →  open http://localhost:5173")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {

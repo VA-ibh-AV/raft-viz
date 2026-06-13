@@ -1,119 +1,187 @@
-import { useState } from 'react'
-import { useCluster }  from './hooks/useCluster'
-import { useControls } from './hooks/useControls'
+import { useState, useEffect, useRef } from 'react'
+import { useCluster }    from './hooks/useCluster'
+import { useControls }   from './hooks/useControls'
+import { useAnimations } from './hooks/useAnimations'
 import { ClusterCanvas } from './components/ClusterCanvas'
 import { EventLog }      from './components/EventLog'
+import { SubmitBar }     from './components/SubmitBar'
+import { PhaseBanner }   from './components/PhaseBanner'
+import { LeftDocs }      from './components/docs/LeftDocs'
 
 export default function App() {
-  const { nodes, events, connected } = useCluster('ws://localhost:8080/ws')
-  const { kill, revive, submit, addNode, removeNode } = useControls()
-  const [cmd, setCmd] = useState('')
+  const { nodes, events, connected, animEvent } = useCluster('ws://localhost:8080/ws')
+  const { kill, revive, submit, addNode, removeNode, getTiming, setTiming } = useControls()
+  const animations   = useAnimations(animEvent, nodes)
+  const resetZoomRef = useRef<(() => void) | null>(null)
+
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   const handleNodeClick = (id: number, alive: boolean) => {
-    if (alive) kill(id)
-    else       revive(id)
+    alive ? kill(id) : revive(id)
   }
 
-  const handleSubmit = () => {
-    const c = cmd.trim()
-    if (c) { submit(c); setCmd('') }
-  }
+  const leader = nodes.find(n => n.role === 'LEADER' && n.alive)
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100vh',
-      background: '#0F1117', color: 'white', fontFamily: 'system-ui, sans-serif',
-    }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh',
+      background: 'var(--bg)', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
 
-      {/* ── Header ── */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '10px 20px', borderBottom: '1px solid #1E293B', flexShrink: 0,
+      {/* ══ Header ══════════════════════════════════════════════════════════ */}
+      <header style={{
+        display: 'flex', alignItems: 'center', gap: 16,
+        padding: '0 24px', height: 60, flexShrink: 0,
+        background: 'var(--header-bg)',
+        borderBottom: '1px solid var(--border)',
+        backdropFilter: 'blur(10px)',
       }}>
-        <span style={{
-          fontFamily: 'ui-monospace, monospace', fontWeight: 600,
-          fontSize: 14, color: '#E2E8F0',
-        }}>
-          raft visualizer
-        </span>
 
+        {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Add node button */}
-          <button
-            onClick={() => addNode()}
-            disabled={nodes.filter(n => n.alive).length >= 7}
-            style={{
-              background: '#1E293B', border: '1px solid #334155',
-              color: '#94A3B8', padding: '4px 12px', borderRadius: 4,
-              fontSize: 12, fontFamily: 'ui-monospace, monospace',
-              cursor: 'pointer',
-            }}
-          >
-            + add node
-          </button>
-
-          {/* Connection status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 9,
+            background: 'linear-gradient(135deg, var(--accent), var(--accent2))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px var(--accent-shadow)',
+          }}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="4"  width="14" height="3.2" rx="1" fill="white" opacity="0.95"/>
+              <rect x="3" y="8.5" width="14" height="3.2" rx="1" fill="white" opacity="0.7"/>
+              <rect x="3" y="13" width="14" height="3.2" rx="1" fill="white" opacity="0.5"/>
+              <circle cx="5.5" cy="5.6" r="0.7" fill="var(--accent)"/>
+              <circle cx="5.5" cy="10.1" r="0.7" fill="var(--accent)"/>
+              <circle cx="5.5" cy="14.6" r="0.7" fill="var(--accent)"/>
+            </svg>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <span style={{
-              width: 7, height: 7, borderRadius: '50%',
-              background: connected ? '#22C55E' : '#EF4444', display: 'inline-block',
-            }} />
-            <span style={{ fontSize: 12, fontFamily: 'ui-monospace, monospace', color: '#475569' }}>
-              {connected ? 'connected' : 'reconnecting…'}
+              fontSize: 16, fontWeight: 800, color: 'var(--text)',
+              letterSpacing: '-0.4px', lineHeight: 1,
+              fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            }}>
+              Raft<span style={{ color: 'var(--accent)' }}>Viz</span>
+            </span>
+            <span style={{
+              fontSize: 10, color: 'var(--text3)',
+              fontFamily: 'ui-monospace, monospace',
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+            }}>
+              consensus playground
             </span>
           </div>
         </div>
-      </div>
 
-      {/* ── Hint ── */}
-      <div style={{
-        textAlign: 'center', padding: '4px', fontSize: 11,
-        fontFamily: 'ui-monospace, monospace', color: '#334155',
-        borderBottom: '1px solid #1E293B',
-      }}>
-        click node to kill · click offline to revive · − to remove from cluster
-      </div>
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
 
-      {/* ── Body ── */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Reset */}
+        <button
+          onClick={() => resetZoomRef.current?.()}
+          className="btn"
+          style={{
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--text3)', padding: '7px 13px', borderRadius: 8,
+            fontSize: 12, cursor: 'pointer',
+            fontFamily: 'ui-monospace, monospace',
+          }}
+          title="reset zoom — or double-click canvas"
+        >
+          ⌖ reset view
+        </button>
+
+        {/* Theme toggle */}
+        <button
+          onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+          className="btn"
+          style={{
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--text2)', padding: '7px 11px', borderRadius: 8,
+            fontSize: 14, cursor: 'pointer', lineHeight: 1,
+          }}
+          title="toggle light/dark theme"
+        >
+          {theme === 'dark' ? '☀' : '🌙'}
+        </button>
+
+        {/* Status */}
         <div style={{
-          flex: 1, display: 'flex', alignItems: 'center',
-          justifyContent: 'center', padding: '1rem',
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '6px 12px', borderRadius: 20,
+          background: connected ? 'var(--conn-bg)' : 'var(--disc-bg)',
+          border: `1px solid ${connected ? 'var(--conn-border)' : 'var(--disc-border)'}`,
         }}>
+          <span
+            className={connected ? 'status-live' : undefined}
+            style={{
+              width: 7, height: 7, borderRadius: '50%', display: 'inline-block',
+              background: connected ? 'var(--accent)' : 'var(--red)',
+              boxShadow: connected ? `0 0 6px var(--accent)` : 'none',
+              flexShrink: 0,
+            }}
+          />
+          <span style={{
+            fontSize: 11, color: connected ? 'var(--conn-text)' : 'var(--disc-text)',
+            fontFamily: 'ui-monospace, monospace',
+          }}>
+            {connected ? 'connected' : 'reconnecting…'}
+          </span>
+        </div>
+      </header>
+
+      {/* ══ Body ════════════════════════════════════════════════════════════ */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+        {/* Left docs sidebar */}
+        <LeftDocs nodes={nodes} />
+
+        {/* Canvas */}
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <ClusterCanvas
             nodes={nodes}
             onNodeClick={handleNodeClick}
             onNodeRemove={removeNode}
+            messages={animations.messages}
+            newLogEntries={animations.newLogEntries}
+            committedEntries={animations.committedEntries}
+            nodeFlashes={animations.nodeFlashes}
+            resetZoomRef={resetZoomRef}
           />
+
+          {/* Phase banner */}
+          <PhaseBanner nodes={nodes} />
+
+          {/* Floating hint */}
+          <div style={{
+            position: 'absolute', bottom: 14, left: '50%',
+            transform: 'translateX(-50%)',
+            padding: '6px 14px', borderRadius: 20,
+            background: 'var(--surface)', backdropFilter: 'blur(8px)',
+            border: '1px solid var(--border)',
+            fontSize: 10, color: 'var(--text3)',
+            pointerEvents: 'none', whiteSpace: 'nowrap',
+            fontFamily: 'ui-monospace, monospace',
+          }}>
+            hover node to kill/revive · drag to move · scroll to zoom · dbl-click reset
+          </div>
         </div>
-        <EventLog events={events} />
-      </div>
 
-      {/* ── Submit bar ── */}
-      <div style={{
-        display: 'flex', gap: 8, padding: '10px 20px',
-        borderTop: '1px solid #1E293B', flexShrink: 0, background: '#080D13',
-      }}>
-        <input
-          value={cmd}
-          onChange={e => setCmd(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-          placeholder='command — e.g.  SET x 1'
-          style={{
-            flex: 1, background: '#0F172A', border: '1px solid #1E293B',
-            borderRadius: 4, color: '#E2E8F0', padding: '5px 10px',
-            fontSize: 12, fontFamily: 'ui-monospace, monospace', outline: 'none',
-          }}
+        {/* Sidebar */}
+        <EventLog
+          events={events}
+          nodes={nodes}
+          onKill={kill}
+          onRevive={revive}
+          onAdd={addNode}
+          onSubmit={submit}
+          getTiming={getTiming}
+          setTiming={setTiming}
         />
-        <button onClick={handleSubmit} style={{
-          background: '#14532D', border: '1px solid #22C55E55',
-          color: '#4ADE80', padding: '5px 14px', borderRadius: 4,
-          fontSize: 12, fontFamily: 'ui-monospace, monospace', cursor: 'pointer',
-        }}>
-          submit
-        </button>
       </div>
 
+      {/* ══ Submit bar ══════════════════════════════════════════════════════ */}
+      <SubmitBar leader={leader} onSubmit={submit} />
     </div>
   )
 }

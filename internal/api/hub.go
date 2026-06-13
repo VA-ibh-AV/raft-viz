@@ -36,6 +36,7 @@ type EventMsg struct {
 	Command     string `json:"command,omitempty"`
 	LogIndex    int    `json:"logIndex,omitempty"`
 	CommitIndex int    `json:"commitIndex,omitempty"`
+	From        int    `json:"from,omitempty"`
 }
 
 type Message struct {
@@ -66,18 +67,17 @@ func NewHub(cl *cluster.Cluster, bus <-chan raft.Event) *Hub {
 
 func (h *Hub) Run() {
 	for event := range h.eventBus {
-		if event.Type == raft.EventHeartbeat {
-			continue
-		}
-
-		h.eventsMu.Lock()
-		h.recentEvents = append(h.recentEvents, event)
-		if len(h.recentEvents) > 50 {
-			h.recentEvents = h.recentEvents[1:]
-		}
-		h.eventsMu.Unlock()
-
 		data := h.buildMessage(event)
+
+		// heartbeats broadcast live but are not replayed on reconnect
+		if event.Type != raft.EventHeartbeat {
+			h.eventsMu.Lock()
+			h.recentEvents = append(h.recentEvents, event)
+			if len(h.recentEvents) > 50 {
+				h.recentEvents = h.recentEvents[1:]
+			}
+			h.eventsMu.Unlock()
+		}
 
 		h.mu.RLock()
 		for _, ch := range h.clients {
@@ -173,6 +173,10 @@ func (h *Hub) buildMessage(e raft.Event) []byte {
 		case raft.EventLogCommitted:
 			if idx, ok := e.Data.(int); ok {
 				em.CommitIndex = idx
+			}
+		case raft.EventHeartbeat:
+			if leaderID, ok := e.Data.(int); ok {
+				em.From = leaderID
 			}
 		}
 		msg.Event = em
