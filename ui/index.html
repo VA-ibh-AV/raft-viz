@@ -2,12 +2,65 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Raft Viz</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Primary -->
+    <title>RaftViz — Interactive Raft Consensus Algorithm Visualizer</title>
+    <meta name="description" content="Learn the Raft consensus algorithm visually. Interactive simulator showing leader election, log replication, heartbeats, quorum, and fault tolerance in a live distributed cluster — built with Go and React." />
+    <meta name="keywords" content="Raft, Raft consensus, distributed systems, leader election, log replication, consensus algorithm, etcd, distributed consensus, Raft visualization, Raft simulator, Raft tutorial, Raft animation, distributed systems learning, Go, Golang, React" />
+    <meta name="author" content="Vaibhav Bhardwaj" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0b1020" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="canonical" href="https://raftviz.app/" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="mask-icon" href="/favicon.svg" color="#7c3aed" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="RaftViz" />
+    <meta property="og:title" content="RaftViz — Interactive Raft Consensus Algorithm Visualizer" />
+    <meta property="og:description" content="Watch a Raft cluster in motion. Trigger elections, replicate logs, kill leaders, and learn how distributed consensus actually works." />
+    <meta property="og:url" content="https://raftviz.app/" />
+    <meta property="og:image" content="https://raftviz.app/favicon.svg" />
+    <meta property="og:image:alt" content="RaftViz logo — three connected nodes representing a Raft consensus cluster" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="RaftViz — Interactive Raft Consensus Algorithm Visualizer" />
+    <meta name="twitter:description" content="Learn distributed consensus by watching it happen. Live Raft cluster with elections, replication, and fault-tolerance demos." />
+    <meta name="twitter:image" content="https://raftviz.app/favicon.svg" />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "RaftViz",
+      "alternateName": "Raft Consensus Visualizer",
+      "url": "https://raftviz.app/",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Any (Web)",
+      "description": "Interactive visualizer for the Raft consensus algorithm. Simulates leader election, log replication, heartbeats, quorum, and fault tolerance in a live cluster.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "about": [
+        { "@type": "Thing", "name": "Raft consensus algorithm" },
+        { "@type": "Thing", "name": "Distributed systems" },
+        { "@type": "Thing", "name": "Leader election" },
+        { "@type": "Thing", "name": "Log replication" }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>RaftViz needs JavaScript to render the live cluster visualization. Please enable JavaScript.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
